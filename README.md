@@ -1,4 +1,5 @@
 # rms-application Project Setup Guide (Local Development)
+---
 
 ## 📦 Prerequisites:
 Make sure the following is installed in your local machine (Windows).
@@ -60,6 +61,8 @@ docker compose down
 ## ✅ You're Ready!
 
 The project should now run locally.
+
+---
 
 # Branch Naming Convention
 
