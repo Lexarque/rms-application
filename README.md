@@ -76,8 +76,8 @@ quarkus dev
 │   ├── main/
 │   │   ├── java/                         # Java source files (Resources, Services, Entities)
 │   │   │   └── org.acme/                 # Main package for all backend code
-│   │   │       ├── staffs/               # Module-specific folders (always plural: orders, payments, etc.)
-│   │   │       └── orders/, payments/,   # etc.
+│   │   │       ├── staff/               # Module-specific folders
+│   │   │       └── order/, payment/,   # etc.
 │   │   ├── docker/                       # Quarkus-generated Dockerfiles (JVM, Native)
 │   │   └── resources/
 │   │       ├── db/migration/             # Flyway migration SQL files
