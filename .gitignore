@@ -46,3 +46,7 @@ nb-configuration.xml
 
 # Postgres data directory
 /postgres-data
+
+# JWT key files
+src/main/resources/privateKey.pem
+src/main/resources/publicKey.pem

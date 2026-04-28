@@ -1,6 +1,6 @@
--- This file allow to write SQL commands that will be emitted in test and dev.
--- The commands are commented as their support depends of the database
--- insert into myentity (id, field) values(1, 'field-1');
--- insert into myentity (id, field) values(2, 'field-2');
--- insert into myentity (id, field) values(3, 'field-3');
--- alter sequence myentity_seq restart with 4;
+INSERT INTO inventory_items (sku, name, category, unit, qty_on_hand, reorder_level, status)
+VALUES
+    ('ING-CHICK-001', 'Chicken Breast', 'Protein', 'kg', 40, 15, 'ACTIVE'),
+    ('ING-RICE-001', 'Jasmine Rice', 'Dry Goods', 'kg', 55, 20, 'ACTIVE'),
+    ('BEV-COLA-001', 'Cola Syrup', 'Beverage', 'liter', 8, 10, 'ACTIVE')
+ON CONFLICT (sku) DO NOTHING;
