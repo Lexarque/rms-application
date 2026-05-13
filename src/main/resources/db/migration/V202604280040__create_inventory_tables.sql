@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS inventory_items (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     sku VARCHAR(50) NOT NULL,
     name VARCHAR(150) NOT NULL,
     category VARCHAR(80) NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
 );
 
 CREATE TABLE IF NOT EXISTS inventory_transactions (
-    id BIGSERIAL PRIMARY KEY,
-    item_id BIGINT NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
+    id UUID PRIMARY KEY,
+    item_id UUID NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
     txn_type VARCHAR(10) NOT NULL CHECK (txn_type IN ('IN', 'OUT', 'ADJUST')),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     note TEXT,
