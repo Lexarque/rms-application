@@ -14,4 +14,7 @@ public class CreateUserRequest {
 
     @NotBlank(message = "Phone number is required")
     public String phoneNumber;
+
+    @NotBlank(message = "Role is required")
+    public String role;
 }
