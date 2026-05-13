@@ -2,7 +2,7 @@ package org.acme.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public class CreateUserRequest {
+public class UpdateUserRequest {
     @NotBlank(message = "Username is required")
     public String username;
 
