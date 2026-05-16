@@ -1,6 +1,6 @@
 services:
     db:
-        image: postgres:18
+        image: postgres:17
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -14,3 +14,7 @@ services:
             interval: 5s
             timeout: 5s
             retries: 20
+
+volumes:
+    postgres_data:
+        name: rms_postgres_data
