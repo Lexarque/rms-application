@@ -1,229 +1,177 @@
 package org.acme.inventories.service;
 
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
+import org.acme.inventories.dto.AdjustQuantityRequest;
 import org.acme.inventories.dto.CreateInventoryItemRequest;
-import org.acme.inventories.dto.CreateInventoryTransactionRequest;
 import org.acme.inventories.dto.UpdateInventoryItemRequest;
+import org.acme.inventories.mapper.InventoryMapper;
 import org.acme.inventories.model.InventoryItem;
-import org.acme.inventories.model.InventoryStatus;
-import org.acme.inventories.model.InventoryTransaction;
-import org.acme.inventories.model.InventoryTxnType;
+import org.acme.inventories.model.InventoryMovement;
+import org.acme.inventories.model.MovementType;
+import org.acme.inventories.model.StockStatus;
 import org.acme.inventories.repository.InventoryItemRepository;
-import org.acme.inventories.repository.InventoryTransactionRepository;
+import org.acme.inventories.repository.InventoryMovementRepository;
 
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 @ApplicationScoped
 public class InventoryService {
 
     private final InventoryItemRepository itemRepository;
-    private final InventoryTransactionRepository transactionRepository;
+    private final InventoryMovementRepository movementRepository;
+    private final InventoryMapper mapper;
 
-    public InventoryService(InventoryItemRepository itemRepository, InventoryTransactionRepository transactionRepository) {
+    public InventoryService(InventoryItemRepository itemRepository,
+                            InventoryMovementRepository movementRepository,
+                            InventoryMapper mapper) {
         this.itemRepository = itemRepository;
-        this.transactionRepository = transactionRepository;
+        this.movementRepository = movementRepository;
+        this.mapper = mapper;
     }
 
-    public List<InventoryItem> listItems(String search, String category, String status, Boolean lowStock) {
-        List<InventoryItem> items = itemRepository.listAll();
-        return items.stream()
-                .filter(item -> search == null || search.isBlank()
-                        || containsIgnoreCase(item.sku, search)
-                        || containsIgnoreCase(item.name, search))
-                .filter(item -> category == null || category.isBlank()
-                        || equalsIgnoreCase(item.category, category))
-                .filter(item -> status == null || status.isBlank()
-                        || item.status.name().equalsIgnoreCase(status))
-                .filter(item -> lowStock == null || !lowStock || item.qtyOnHand <= item.reorderLevel)
-                .toList();
+    public List<InventoryItem> listItems(String q, StockStatus status, int page, int size, String sort) {
+        String normalizedQ = normalize(q);
+        Sort panacheSort = parseSort(sort);
+
+        List<InventoryItem> items;
+        if (normalizedQ == null) {
+            items = itemRepository.findAll(panacheSort).list();
+        } else {
+            items = itemRepository.find(
+                    "lower(itemName) like ?1",
+                    panacheSort,
+                    "%" + normalizedQ.toLowerCase(Locale.ROOT) + "%"
+            ).list();
+        }
+
+        if (status != null) {
+            items = items.stream()
+                    .filter(item -> mapper.computeStatus(item.quantity, item.minimumThreshold) == status)
+                    .toList();
+        }
+
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 20 : Math.min(size, 200);
+        int from = safePage * safeSize;
+        if (from >= items.size()) {
+            return List.of();
+        }
+        int to = Math.min(from + safeSize, items.size());
+        return items.subList(from, to);
     }
 
-    public InventoryItem getItemById(Long id) {
-        return itemRepository.findByIdOptional(id)
-                .orElseThrow(() -> badRequest(Response.Status.NOT_FOUND, "Inventory item not found"));
+    public InventoryItem getItem(UUID id) {
+        InventoryItem item = itemRepository.findById(id);
+        if (item == null) {
+            throw new NotFoundException("Inventory item not found");
+        }
+        return item;
     }
 
     @Transactional
     public InventoryItem createItem(CreateInventoryItemRequest request) {
-        validateCreateItemRequest(request);
-
-        String normalizedSku = request.sku.trim().toUpperCase(Locale.ROOT);
-        if (itemRepository.findBySku(normalizedSku).isPresent()) {
-            throw badRequest(Response.Status.CONFLICT, "SKU already exists");
-        }
-
         InventoryItem item = new InventoryItem();
-        item.sku = normalizedSku;
-        item.name = request.name.trim();
-        item.category = request.category.trim();
-        item.unit = request.unit.trim();
-        item.qtyOnHand = nonNullOrDefault(request.qtyOnHand, 0);
-        item.reorderLevel = nonNullOrDefault(request.reorderLevel, 0);
-        item.status = parseStatus(request.status, InventoryStatus.ACTIVE);
+        item.itemName = request.itemName().trim();
+        item.quantity = nonNegativeOrZero(request.quantity(), "quantity");
+        item.minimumThreshold = nonNegativeOrZero(request.minimumThreshold(), "minimumThreshold");
 
         itemRepository.persist(item);
         return item;
     }
 
     @Transactional
-    public InventoryItem updateItem(Long id, UpdateInventoryItemRequest request) {
-        if (request == null) {
-            throw badRequest(Response.Status.BAD_REQUEST, "Request body is required");
-        }
+    public InventoryItem updateItem(UUID id, UpdateInventoryItemRequest request) {
+        InventoryItem item = getItem(id);
 
-        InventoryItem item = getItemById(id);
-
-        if (request.name != null) {
-            item.name = requireText(request.name, "name");
-        }
-        if (request.category != null) {
-            item.category = requireText(request.category, "category");
-        }
-        if (request.unit != null) {
-            item.unit = requireText(request.unit, "unit");
-        }
-        if (request.reorderLevel != null) {
-            if (request.reorderLevel < 0) {
-                throw badRequest(Response.Status.BAD_REQUEST, "reorderLevel cannot be negative");
-            }
-            item.reorderLevel = request.reorderLevel;
-        }
-        if (request.status != null) {
-            item.status = parseStatus(request.status, item.status);
-        }
+        item.itemName = request.itemName().trim();
+        item.quantity = nonNegativeOrZero(request.quantity(), "quantity");
+        item.minimumThreshold = nonNegativeOrZero(request.minimumThreshold(), "minimumThreshold");
+        item.lastUpdated = LocalDateTime.now();
 
         return item;
     }
 
     @Transactional
-    public void deactivateItem(Long id) {
-        InventoryItem item = getItemById(id);
-        item.status = InventoryStatus.INACTIVE;
+    public InventoryItem adjustQuantity(UUID id, AdjustQuantityRequest request) {
+        InventoryItem item = getItem(id);
+        int current = item.quantity;
+        int newQuantity;
+
+        if (request.movementType() == MovementType.IN) {
+            newQuantity = current + request.quantity();
+        } else if (request.movementType() == MovementType.OUT) {
+            newQuantity = current - request.quantity();
+            if (newQuantity < 0) {
+                throw new BadRequestException("OUT movement cannot make quantity negative");
+            }
+        } else {
+            newQuantity = request.quantity();
+        }
+
+        item.quantity = newQuantity;
+        item.lastUpdated = LocalDateTime.now();
+
+        InventoryMovement movement = new InventoryMovement();
+        movement.item = item;
+        movement.movementType = request.movementType();
+        movement.quantity = request.quantity();
+        movement.note = normalize(request.note());
+        movement.reference = normalize(request.reference());
+        movement.performedBy = normalize(request.performedBy());
+        movementRepository.persist(movement);
+
+        return item;
     }
 
     @Transactional
-    public InventoryTransaction createTransaction(Long itemId, CreateInventoryTransactionRequest request) {
-        validateTransactionRequest(request);
-
-        InventoryItem item = getItemById(itemId);
-        InventoryTxnType txnType = parseTxnType(request.txnType);
-        int quantity = request.quantity;
-
-        int currentQty = item.qtyOnHand;
-        int newQty;
-
-        if (txnType == InventoryTxnType.IN) {
-            newQty = currentQty + quantity;
-        } else if (txnType == InventoryTxnType.OUT) {
-            newQty = currentQty - quantity;
-            if (newQty < 0) {
-                throw badRequest(Response.Status.BAD_REQUEST, "Insufficient stock for OUT transaction");
-            }
-        } else {
-            String note = request.note == null ? "" : request.note.toLowerCase(Locale.ROOT);
-            boolean decrease = note.contains("-") || note.contains("decrease") || note.contains("deduct");
-            newQty = decrease ? currentQty - quantity : currentQty + quantity;
-            if (newQty < 0) {
-                throw badRequest(Response.Status.BAD_REQUEST, "Adjustment cannot produce negative stock");
-            }
-        }
-
-        item.qtyOnHand = newQty;
-
-        InventoryTransaction txn = new InventoryTransaction();
-        txn.item = item;
-        txn.txnType = txnType;
-        txn.quantity = quantity;
-        txn.note = trimToNull(request.note);
-        txn.refNo = trimToNull(request.refNo);
-        txn.createdBy = trimToNull(request.createdBy);
-
-        transactionRepository.persist(txn);
-        return txn;
+    public void deleteItem(UUID id) {
+        InventoryItem item = getItem(id);
+        itemRepository.delete(item);
     }
 
-    public List<InventoryTransaction> listTransactions(Long itemId, String txnType) {
-        List<InventoryTransaction> transactions = transactionRepository.listAll();
-        return transactions.stream()
-                .filter(txn -> itemId == null || txn.item.id.equals(itemId))
-                .filter(txn -> txnType == null || txnType.isBlank()
-                        || txn.txnType.name().equalsIgnoreCase(txnType))
-                .toList();
+    public List<InventoryMovement> listMovements(UUID itemId, String month) {
+        YearMonth ym = parseMonth(month);
+
+        String query = "1=1";
+        java.util.ArrayList<Object> params = new java.util.ArrayList<>();
+
+        if (itemId != null) {
+            getItem(itemId);
+            query += " and item.id = ?" + (params.size() + 1);
+            params.add(itemId);
+        }
+
+        if (ym != null) {
+            LocalDateTime from = ym.atDay(1).atStartOfDay();
+            LocalDateTime to = ym.plusMonths(1).atDay(1).atStartOfDay();
+            query += " and createdAt >= ?" + (params.size() + 1);
+            params.add(from);
+            query += " and createdAt < ?" + (params.size() + 1);
+            params.add(to);
+        }
+
+        return movementRepository.find(query, Sort.by("createdAt", Sort.Direction.Descending), params.toArray()).list();
     }
 
-    public List<InventoryTransaction> listItemTransactions(Long itemId) {
-        getItemById(itemId);
-        return transactionRepository.find("item.id = ?1 order by createdAt desc", itemId).list();
+    private int nonNegativeOrZero(Integer value, String field) {
+        if (value == null) {
+            return 0;
+        }
+        if (value < 0) {
+            throw new BadRequestException(field + " cannot be negative");
+        }
+        return value;
     }
 
-    private void validateCreateItemRequest(CreateInventoryItemRequest request) {
-        if (request == null) {
-            throw badRequest(Response.Status.BAD_REQUEST, "Request body is required");
-        }
-
-        requireText(request.sku, "sku");
-        requireText(request.name, "name");
-        requireText(request.category, "category");
-        requireText(request.unit, "unit");
-
-        if (request.qtyOnHand != null && request.qtyOnHand < 0) {
-            throw badRequest(Response.Status.BAD_REQUEST, "qtyOnHand cannot be negative");
-        }
-        if (request.reorderLevel != null && request.reorderLevel < 0) {
-            throw badRequest(Response.Status.BAD_REQUEST, "reorderLevel cannot be negative");
-        }
-    }
-
-    private void validateTransactionRequest(CreateInventoryTransactionRequest request) {
-        if (request == null) {
-            throw badRequest(Response.Status.BAD_REQUEST, "Request body is required");
-        }
-
-        parseTxnType(request.txnType);
-
-        if (request.quantity == null || request.quantity <= 0) {
-            throw badRequest(Response.Status.BAD_REQUEST, "quantity must be > 0");
-        }
-    }
-
-    private InventoryStatus parseStatus(String value, InventoryStatus defaultStatus) {
-        if (value == null || value.isBlank()) {
-            return defaultStatus;
-        }
-        try {
-            return InventoryStatus.valueOf(value.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw badRequest(Response.Status.BAD_REQUEST, "Invalid status. Allowed: ACTIVE, INACTIVE");
-        }
-    }
-
-    private InventoryTxnType parseTxnType(String value) {
-        if (value == null || value.isBlank()) {
-            throw badRequest(Response.Status.BAD_REQUEST, "txnType is required");
-        }
-        try {
-            return InventoryTxnType.valueOf(value.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw badRequest(Response.Status.BAD_REQUEST, "Invalid txnType. Allowed: IN, OUT, ADJUST");
-        }
-    }
-
-    private String requireText(String value, String fieldName) {
-        if (value == null || value.isBlank()) {
-            throw badRequest(Response.Status.BAD_REQUEST, fieldName + " is required");
-        }
-        return value.trim();
-    }
-
-    private Integer nonNullOrDefault(Integer value, int defaultValue) {
-        return value == null ? defaultValue : value;
-    }
-
-    private String trimToNull(String value) {
+    private String normalize(String value) {
         if (value == null) {
             return null;
         }
@@ -231,20 +179,40 @@ public class InventoryService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private boolean containsIgnoreCase(String source, String search) {
-        return source != null && source.toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT));
+    private YearMonth parseMonth(String month) {
+        if (month == null || month.isBlank()) {
+            return null;
+        }
+        try {
+            return YearMonth.parse(month.trim());
+        } catch (Exception ex) {
+            throw new BadRequestException("month must be in YYYY-MM format");
+        }
     }
 
-    private boolean equalsIgnoreCase(String left, String right) {
-        return left != null && left.equalsIgnoreCase(right);
-    }
+    private Sort parseSort(String sort) {
+        String field = "lastUpdated";
+        Sort.Direction direction = Sort.Direction.Descending;
 
-    private WebApplicationException badRequest(Response.Status status, String message) {
-        return new WebApplicationException(Response.status(status)
-                .entity(new ErrorMessage(message))
-                .build());
-    }
+        if (sort != null && !sort.isBlank()) {
+            String[] parts = sort.split(",");
+            if (parts.length > 0 && !parts[0].isBlank()) {
+                field = switch (parts[0].trim()) {
+                    case "item_name", "itemName" -> "itemName";
+                    case "quantity" -> "quantity";
+                    case "minimum_threshold", "minimumThreshold" -> "minimumThreshold";
+                    case "created_at", "createdAt" -> "createdAt";
+                    case "last_updated", "lastUpdated" -> "lastUpdated";
+                    default -> throw new BadRequestException("Unsupported sort field: " + parts[0].trim());
+                };
+            }
+            if (parts.length > 1) {
+                direction = "asc".equalsIgnoreCase(parts[1].trim())
+                        ? Sort.Direction.Ascending
+                        : Sort.Direction.Descending;
+            }
+        }
 
-    public record ErrorMessage(String message) {
+        return Sort.by(field, direction);
     }
 }
