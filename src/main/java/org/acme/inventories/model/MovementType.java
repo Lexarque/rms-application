@@ -1,6 +1,6 @@
 package org.acme.inventories.model;
 
-public enum InventoryTxnType {
+public enum MovementType {
     IN,
     OUT,
     ADJUST

@@ -2,62 +2,48 @@ package org.acme.inventories.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "inventory_items")
+@Table(name = "inventory")
 public class InventoryItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long id;
+    public UUID id;
 
-    @Column(name = "sku", nullable = false, length = 50, unique = true)
-    public String sku;
+    @Column(name = "item_name", nullable = false, length = 255)
+    public String itemName;
 
-    @Column(name = "name", nullable = false, length = 150)
-    public String name;
+    @Column(nullable = false)
+    public int quantity;
 
-    @Column(name = "category", nullable = false, length = 80)
-    public String category;
+    @Column(name = "minimum_threshold", nullable = false)
+    public int minimumThreshold;
 
-    @Column(name = "unit", nullable = false, length = 20)
-    public String unit;
+    @Column(name = "last_updated", nullable = false)
+    public LocalDateTime lastUpdated;
 
-    @Column(name = "qty_on_hand", nullable = false)
-    public Integer qtyOnHand = 0;
-
-    @Column(name = "reorder_level", nullable = false)
-    public Integer reorderLevel = 0;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    public InventoryStatus status = InventoryStatus.ACTIVE;
-
-    @Column(name = "created_at", nullable = false)
-    public OffsetDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    public OffsetDateTime updatedAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    public LocalDateTime createdAt;
 
     @PrePersist
-    void onCreate() {
-        OffsetDateTime now = OffsetDateTime.now();
+    void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
         createdAt = now;
-        updatedAt = now;
+        lastUpdated = now;
     }
 
     @PreUpdate
-    void onUpdate() {
-        updatedAt = OffsetDateTime.now();
+    void preUpdate() {
+        lastUpdated = LocalDateTime.now();
     }
 }

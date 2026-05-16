@@ -1,11 +1,18 @@
 package org.acme.inventories.dto;
 
-public class CreateInventoryItemRequest {
-    public String sku;
-    public String name;
-    public String category;
-    public String unit;
-    public Integer qtyOnHand;
-    public Integer reorderLevel;
-    public String status;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record CreateInventoryItemRequest(
+        @NotBlank(message = "itemName is required")
+        @Size(max = 255)
+        String itemName,
+
+        @Min(value = 0, message = "quantity cannot be negative")
+        Integer quantity,
+
+        @Min(value = 0, message = "minimumThreshold cannot be negative")
+        Integer minimumThreshold
+) {
 }

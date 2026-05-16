@@ -1,35 +1,17 @@
 package org.acme.inventories.dto;
 
-import org.acme.inventories.model.InventoryItem;
+import org.acme.inventories.model.StockStatus;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record InventoryItemResponse(
-        Long id,
-        String sku,
-        String name,
-        String category,
-        String unit,
-        Integer qtyOnHand,
-        Integer reorderLevel,
-        String status,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
-        boolean lowStock
+        UUID id,
+        String itemName,
+        int quantity,
+        int minimumThreshold,
+        StockStatus status,
+        LocalDateTime createdAt,
+        LocalDateTime lastUpdated
 ) {
-    public static InventoryItemResponse from(InventoryItem item) {
-        return new InventoryItemResponse(
-                item.id,
-                item.sku,
-                item.name,
-                item.category,
-                item.unit,
-                item.qtyOnHand,
-                item.reorderLevel,
-                item.status.name(),
-                item.createdAt,
-                item.updatedAt,
-                item.qtyOnHand <= item.reorderLevel
-        );
-    }
 }
