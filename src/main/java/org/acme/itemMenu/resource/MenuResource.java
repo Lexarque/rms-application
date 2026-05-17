@@ -16,7 +16,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-@Path("/api/menu")
+@Path("/menu")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class MenuResource {
