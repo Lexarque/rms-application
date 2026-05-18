@@ -6,10 +6,10 @@ import java.util.UUID;
 
 public record MenuItemResponse(
         UUID id,
-        String item_name,
+        String itemName,
         String description,
         BigDecimal price,
-        String image_url,
-        boolean is_available,
-        LocalDateTime last_updated
+        String imageUrl,
+        boolean isAvailable,
+        LocalDateTime lastUpdated
 ) {}
