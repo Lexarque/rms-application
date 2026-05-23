@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     reference VARCHAR(150),
     note VARCHAR(500),
     performed_by VARCHAR(150),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventory_movements_item_created
