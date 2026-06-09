@@ -1,5 +1,6 @@
 package org.acme.inventories.resource;
 
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -18,7 +19,6 @@ import org.acme.inventories.dto.CreateInventoryItemRequest;
 import org.acme.inventories.dto.InventoryItemResponse;
 import org.acme.inventories.dto.InventoryMovementResponse;
 import org.acme.inventories.dto.UpdateInventoryItemRequest;
-import org.acme.inventories.mapper.InventoryMapper;
 import org.acme.inventories.model.StockStatus;
 import org.acme.inventories.service.InventoryService;
 
@@ -31,13 +31,8 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class InventoryResource {
 
-    private final InventoryService inventoryService;
-    private final InventoryMapper mapper;
-
-    public InventoryResource(InventoryService inventoryService, InventoryMapper mapper) {
-        this.inventoryService = inventoryService;
-        this.mapper = mapper;
-    }
+    @Inject
+    InventoryService inventoryService;
 
     @GET
     public List<InventoryItemResponse> listItems(@QueryParam("q") String q,
@@ -47,21 +42,21 @@ public class InventoryResource {
                                                  @DefaultValue("last_updated,desc") @QueryParam("sort") String sort) {
         return inventoryService.listItems(q, status, page, size, sort)
                 .stream()
-                .map(mapper::toItemResponse)
+                .map(InventoryItemResponse::from)
                 .toList();
     }
 
     @GET
     @Path("/{id}")
     public InventoryItemResponse getItem(@PathParam("id") UUID id) {
-        return mapper.toItemResponse(inventoryService.getItem(id));
+        return InventoryItemResponse.from(inventoryService.getItem(id));
     }
 
     @POST
     public Response createItem(@Valid CreateInventoryItemRequest request) {
         var created = inventoryService.createItem(request);
         return Response.created(URI.create("/api/inventory/" + created.id))
-                .entity(mapper.toItemResponse(created))
+                .entity(InventoryItemResponse.from(created))
                 .build();
     }
 
@@ -69,14 +64,14 @@ public class InventoryResource {
     @Path("/{id}")
     public InventoryItemResponse updateItem(@PathParam("id") UUID id,
                                             @Valid UpdateInventoryItemRequest request) {
-        return mapper.toItemResponse(inventoryService.updateItem(id, request));
+        return InventoryItemResponse.from(inventoryService.updateItem(id, request));
     }
 
     @POST
     @Path("/{id}/movements")
     public InventoryItemResponse postMovement(@PathParam("id") UUID id,
                                               @Valid AdjustQuantityRequest request) {
-        return mapper.toItemResponse(inventoryService.adjustQuantity(id, request));
+        return InventoryItemResponse.from(inventoryService.adjustQuantity(id, request));
     }
 
     @DELETE
@@ -92,7 +87,7 @@ public class InventoryResource {
                                                              @QueryParam("month") String month) {
         return inventoryService.listMovements(id, month)
                 .stream()
-                .map(mapper::toMovementResponse)
+                .map(InventoryMovementResponse::from)
                 .toList();
     }
 
@@ -101,7 +96,7 @@ public class InventoryResource {
     public List<InventoryMovementResponse> listMovements(@QueryParam("month") String month) {
         return inventoryService.listMovements(null, month)
                 .stream()
-                .map(mapper::toMovementResponse)
+                .map(InventoryMovementResponse::from)
                 .toList();
     }
 }

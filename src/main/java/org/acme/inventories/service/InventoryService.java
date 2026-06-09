@@ -2,13 +2,14 @@ package org.acme.inventories.service;
 
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.acme.inventories.dto.AdjustQuantityRequest;
 import org.acme.inventories.dto.CreateInventoryItemRequest;
+import org.acme.inventories.dto.InventoryItemResponse;
 import org.acme.inventories.dto.UpdateInventoryItemRequest;
-import org.acme.inventories.mapper.InventoryMapper;
 import org.acme.inventories.model.InventoryItem;
 import org.acme.inventories.model.InventoryMovement;
 import org.acme.inventories.model.MovementType;
@@ -25,17 +26,11 @@ import java.util.UUID;
 @ApplicationScoped
 public class InventoryService {
 
-    private final InventoryItemRepository itemRepository;
-    private final InventoryMovementRepository movementRepository;
-    private final InventoryMapper mapper;
+    @Inject
+    InventoryItemRepository itemRepository;
 
-    public InventoryService(InventoryItemRepository itemRepository,
-                            InventoryMovementRepository movementRepository,
-                            InventoryMapper mapper) {
-        this.itemRepository = itemRepository;
-        this.movementRepository = movementRepository;
-        this.mapper = mapper;
-    }
+    @Inject
+    InventoryMovementRepository movementRepository;
 
     public List<InventoryItem> listItems(String q, StockStatus status, int page, int size, String sort) {
         String normalizedQ = normalize(q);
@@ -54,7 +49,7 @@ public class InventoryService {
 
         if (status != null) {
             items = items.stream()
-                    .filter(item -> mapper.computeStatus(item.quantity, item.minimumThreshold) == status)
+                    .filter(item -> InventoryItemResponse.computeStatus(item.quantity, item.minimumThreshold) == status)
                     .toList();
         }
 
@@ -94,7 +89,7 @@ public class InventoryService {
         item.itemName = request.itemName().trim();
         item.quantity = nonNegativeOrZero(request.quantity(), "quantity");
         item.minimumThreshold = nonNegativeOrZero(request.minimumThreshold(), "minimumThreshold");
-        item.lastUpdated = LocalDateTime.now();
+        item.updatedAt = LocalDateTime.now();
 
         return item;
     }
@@ -117,7 +112,7 @@ public class InventoryService {
         }
 
         item.quantity = newQuantity;
-        item.lastUpdated = LocalDateTime.now();
+        item.updatedAt = LocalDateTime.now();
 
         InventoryMovement movement = new InventoryMovement();
         movement.item = item;
@@ -191,7 +186,7 @@ public class InventoryService {
     }
 
     private Sort parseSort(String sort) {
-        String field = "lastUpdated";
+        String field = "updatedAt";
         Sort.Direction direction = Sort.Direction.Descending;
 
         if (sort != null && !sort.isBlank()) {
@@ -202,7 +197,7 @@ public class InventoryService {
                     case "quantity" -> "quantity";
                     case "minimum_threshold", "minimumThreshold" -> "minimumThreshold";
                     case "created_at", "createdAt" -> "createdAt";
-                    case "last_updated", "lastUpdated" -> "lastUpdated";
+                    case "last_updated", "updatedAt" -> "updatedAt";
                     default -> throw new BadRequestException("Unsupported sort field: " + parts[0].trim());
                 };
             }
