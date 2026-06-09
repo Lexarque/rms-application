@@ -6,7 +6,6 @@ public class UpdateUserRequest {
     @NotBlank(message = "Username is required")
     public String username;
 
-    @NotBlank(message = "Password is required")
     public String password;
 
     @NotBlank(message = "Full name is required")
