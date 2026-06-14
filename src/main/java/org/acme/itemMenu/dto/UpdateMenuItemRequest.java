@@ -1,12 +1,12 @@
 package org.acme.itemMenu.dto;
 
-import java.math.BigDecimal;
+import org.acme.itemMenu.model.MenuCategory;
 
 public record UpdateMenuItemRequest(
         String itemName,
         String description,
-        BigDecimal price,
+        Double price,
+        MenuCategory category,
         String imageUrl,
         Boolean isAvailable
-) {
-}
+) {}

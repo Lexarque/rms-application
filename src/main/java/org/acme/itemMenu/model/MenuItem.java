@@ -24,6 +24,10 @@ public class MenuItem extends PanacheEntityBase {
     @Column(nullable = false, precision = 10, scale = 2)
     public BigDecimal price;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 20)
+    public MenuCategory category;
+
     @Column(name = "image_url")
     public String imageUrl;
 
@@ -36,13 +40,20 @@ public class MenuItem extends PanacheEntityBase {
     @Column(name = "last_updated", nullable = false)
     public LocalDateTime lastUpdated = LocalDateTime.now();
 
-    // ✅ ADD THIS (fix getId issue)
     public UUID getId() {
         return id;
     }
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public MenuCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(MenuCategory category) {
+        this.category = category;
     }
 
     public String getItemName() {
@@ -84,6 +95,12 @@ public class MenuItem extends PanacheEntityBase {
     public void setAvailable(Boolean available) {
         isAvailable = available;
     }
+
+    @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    public java.util.List<MenuIngredient> ingredients = new java.util.ArrayList<>();
+
+    public java.util.List<MenuIngredient> getIngredients() { return ingredients; }
+    public void setIngredients(java.util.List<MenuIngredient> ingredients) { this.ingredients = ingredients; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

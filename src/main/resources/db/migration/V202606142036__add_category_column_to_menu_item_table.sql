@@ -1,0 +1,3 @@
+ALTER TABLE menu_item
+    ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT 'FOOD'
+        CHECK (category IN ('FOOD', 'BEVERAGE', 'DESSERT', 'SNACK', 'SET_MEAL', 'SEASONAL'));

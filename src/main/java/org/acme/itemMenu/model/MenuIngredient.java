@@ -1,10 +1,9 @@
 package org.acme.itemMenu.model;
 
-import org.acme.inventories.model.InventoryItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
+import org.acme.inventories.model.InventoryItem;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -12,43 +11,29 @@ import java.util.UUID;
 public class MenuIngredient extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
     public UUID id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "menu_item_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "menu_item_id", nullable = false)
     public MenuItem menuItem;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "inventory_item_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inventory_id", nullable = false)
     public InventoryItem inventoryItem;
 
     @Column(name = "quantity_required", nullable = false)
     public Integer quantityRequired;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    public LocalDateTime createdAt;
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    @Column(name = "last_updated", nullable = false)
-    public LocalDateTime lastUpdated;
+    public MenuItem getMenuItem() { return menuItem; }
+    public void setMenuItem(MenuItem menuItem) { this.menuItem = menuItem; }
 
-    /* =========================
-       LIFECYCLE HOOKS
-    ========================= */
+    public InventoryItem getInventoryItem() { return inventoryItem; }
+    public void setInventoryItem(InventoryItem inventoryItem) { this.inventoryItem = inventoryItem; }
 
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.lastUpdated = now;
-
-        if (this.quantityRequired == null) {
-            this.quantityRequired = 0;
-        }
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.lastUpdated = LocalDateTime.now();
-    }
+    public Integer getQuantityRequired() { return quantityRequired; }
+    public void setQuantityRequired(Integer quantityRequired) { this.quantityRequired = quantityRequired; }
 }
