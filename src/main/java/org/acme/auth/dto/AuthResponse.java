@@ -1,13 +1,10 @@
 package org.acme.auth.dto;
 
-public class AuthResponse {
-    public String token;
-    public String username;
-    public String role;
+import java.util.UUID;
 
-    public AuthResponse(String token, String username, String role) {
-        this.token = token;
-        this.username = username;
-        this.role = role;
-    }
-}
+public record AuthResponse(
+        String token,
+        UUID id,
+        String username,
+        String role
+) {}
