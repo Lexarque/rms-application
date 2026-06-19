@@ -206,7 +206,7 @@ public class OrderService {
     // ---------- Status transitions ----------
 
     @Transactional
-    public Order changeStatus(UUID id, StatusChangeRequest request) {
+    public OrderResponse changeStatus(UUID id, StatusChangeRequest request) {
         Order order = getOrder(id);
         OrderStatus current = order.getStatus();
         OrderStatus next = request.status();
@@ -221,7 +221,7 @@ public class OrderService {
             order.getReservation().setStatus(ReservationStatus.SEATED);
         }
 
-        return order;
+        return OrderResponse.from(order);
     }
 
     // ---------- Helpers ----------

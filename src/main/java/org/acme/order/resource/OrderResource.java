@@ -70,6 +70,6 @@ public class OrderResource {
     @Path("/{id}/status")
     public OrderResponse changeStatus(@PathParam("id") UUID id,
                                       @Valid StatusChangeRequest request) {
-        return OrderResponse.from(orderService.changeStatus(id, request));
+        return orderService.changeStatus(id, request);
     }
 }

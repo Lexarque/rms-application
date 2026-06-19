@@ -82,7 +82,7 @@ public class MenuService {
     }
 
     @Transactional
-    public MenuItem updateItem(UUID id, String itemName, String description,
+    public MenuItemResponse updateItem(UUID id, String itemName, String description,
                                BigDecimal price, MenuCategory category,
                                String imageUrl, Boolean isAvailable) {
         MenuItem item = getItem(id);
@@ -95,7 +95,7 @@ public class MenuService {
         if (isAvailable != null) item.setAvailable(isAvailable);
         item.setLastUpdated(LocalDateTime.now());
 
-        return item;
+        return MenuItemResponse.from(item);
     }
 
     @Transactional

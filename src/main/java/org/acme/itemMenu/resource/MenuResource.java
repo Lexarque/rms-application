@@ -59,9 +59,9 @@ public class MenuResource {
     @Path("/{id}")
     @RolesAllowed({"admin", "manager"})
     public MenuItemResponse updateItem(@PathParam("id") UUID id, MenuItemRequest request) {
-        return MenuItemResponse.from(menuItemService.updateItem(
+        return menuItemService.updateItem(
                 id, request.itemName(), request.description(), request.price(),
-                request.category(), request.imageUrl(), request.isAvailable()));
+                request.category(), request.imageUrl(), request.isAvailable());
     }
 
     @DELETE
