@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import org.acme.shared.model.BaseEntity;
+import java.util.UUID;
 
 @Entity
 @Table(name = "inventory")
@@ -19,4 +20,16 @@ public class InventoryItem extends BaseEntity {
 
     @Column(name = "minimum_threshold", nullable = false)
     public int minimumThreshold;
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public UUID getId() {
+        return id;
+    }
 }

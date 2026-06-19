@@ -45,9 +45,15 @@ public class MenuService {
             params.and("isAvailable", isAvailable);
         }
 
-        return menuItemRepository.find(query, params)
+        List<MenuItem> items = menuItemRepository.find(query, params)
                 .page(page, size)
                 .list();
+
+        for (MenuItem item : items) {
+            item.setAvailable(isMenuItemAvailable(item));
+        }
+
+        return items;
     }
 
     public MenuItem getItem(UUID id) {
@@ -83,8 +89,9 @@ public class MenuService {
 
     @Transactional
     public MenuItem updateItem(UUID id, String itemName, String description,
-                               BigDecimal price, MenuCategory category,
-                               String imageUrl, Boolean isAvailable) {
+                            BigDecimal price, MenuCategory category,
+                            String imageUrl, Boolean isAvailable) {
+
         MenuItem item = getItem(id);
 
         if (itemName != null && !itemName.isBlank()) item.setItemName(itemName.trim());
@@ -93,9 +100,16 @@ public class MenuService {
         if (category != null) item.setCategory(category);
         if (imageUrl != null) item.setImageUrl(imageUrl);
         if (isAvailable != null) item.setAvailable(isAvailable);
+
         item.setLastUpdated(LocalDateTime.now());
 
-        return item;
+        menuItemRepository.persist(item);
+
+        // 🔥 FORCE RELOAD WITH INGREDIENTS (important)
+        return menuItemRepository.find(
+            "select m from MenuItem m left join fetch m.ingredients where m.id = ?1",
+            id
+        ).firstResult();
     }
 
     @Transactional
@@ -109,7 +123,11 @@ public class MenuService {
 
     public List<MenuIngredient> listIngredients(UUID menuItemId) {
         getItem(menuItemId);
-        return menuIngredientRepository.findByMenuItem(menuItemId);
+        return menuIngredientRepository.find(
+            "select mi from MenuIngredient mi join fetch mi.inventoryItem where mi.menuItem.id = ?1",
+            menuItemId
+        ).list();
+
     }
 
     @Transactional
@@ -120,9 +138,9 @@ public class MenuService {
         if (inventoryItem == null) throw new NotFoundException("Inventory item not found");
 
         boolean alreadyLinked = menuIngredientRepository
-                .find("menuItem.id = ?1 and inventoryItem.id = ?2",
-                        menuItemId, request.inventoryId())
-                .count() > 0;
+        .find("menuItem.id = ?1 and inventoryItem = ?2",
+                menuItemId, inventoryItem)
+        .count() > 0;
         if (alreadyLinked) {
             throw new BadRequestException("This ingredient is already linked to the menu item");
         }
@@ -137,15 +155,41 @@ public class MenuService {
         ingredient.setQuantityRequired(request.quantityRequired());
 
         menuIngredientRepository.persist(ingredient);
+        refreshMenuAvailability(menuItem);
         return ingredient;
     }
 
     @Transactional
-    public void deleteIngredient(UUID menuItemId, UUID ingredientId) {
-        MenuIngredient ingredient = menuIngredientRepository.findById(ingredientId);
-        if (ingredient == null || !ingredient.getMenuItem().getId().equals(menuItemId)) {
+    public void deleteIngredient(UUID menuItemId, UUID inventoryId) {
+
+        MenuIngredient ingredient = menuIngredientRepository
+                .find("menuItem.id = ?1 and inventoryItem.id = ?2",
+                        menuItemId, inventoryId)
+                .firstResult();
+
+        if (ingredient == null) {
             throw new NotFoundException("Ingredient not found for this menu item");
         }
+
         menuIngredientRepository.delete(ingredient);
+        refreshMenuAvailability(ingredient.getMenuItem());
+    }
+
+    private boolean isMenuItemAvailable(MenuItem item) {
+
+        if (item.ingredients == null || item.ingredients.isEmpty()) {
+            return item.getAvailable();
+        }
+
+        return item.ingredients.stream()
+                .allMatch(i ->
+                        i.getInventoryItem().getQuantity() >= i.getQuantityRequired()
+                );
+    }
+
+    private void refreshMenuAvailability(MenuItem item) {
+        boolean available = isMenuItemAvailable(item);
+        item.setAvailable(available);
+        item.setLastUpdated(LocalDateTime.now());
     }
 }

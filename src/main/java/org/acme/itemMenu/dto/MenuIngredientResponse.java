@@ -2,6 +2,9 @@ package org.acme.itemMenu.dto;
 
 import java.util.UUID;
 
+import org.acme.inventories.model.InventoryItem;
+import org.acme.itemMenu.model.MenuIngredient;
+
 public record MenuIngredientResponse(
         UUID id,
         UUID inventoryId,
@@ -10,17 +13,20 @@ public record MenuIngredientResponse(
         Integer availableQuantity,
         boolean sufficient
 ) {
-    public static MenuIngredientResponse from(
-            org.acme.itemMenu.model.MenuIngredient ingredient) {
-        int available = ingredient.getInventoryItem().quantity;
+    public static MenuIngredientResponse from(MenuIngredient ingredient) {
+
+        InventoryItem inv = ingredient.getInventoryItem();
+
+        int available = inv.getQuantity();
         int required = ingredient.getQuantityRequired();
+
         return new MenuIngredientResponse(
                 ingredient.getId(),
-                ingredient.getInventoryItem().id,
-                ingredient.getInventoryItem().itemName,
+                inv.getId(),
+                inv.getItemName(),
                 required,
                 available,
                 available >= required
         );
-    }
+        }
 }

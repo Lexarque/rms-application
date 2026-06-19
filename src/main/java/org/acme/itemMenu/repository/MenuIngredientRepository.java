@@ -11,7 +11,10 @@ import java.util.UUID;
 public class MenuIngredientRepository implements PanacheRepositoryBase<MenuIngredient, UUID> {
 
     public List<MenuIngredient> findByMenuItem(UUID menuItemId) {
-        return find("menuItem.id", menuItemId).list();
+        return find(
+            "select mi from MenuIngredient mi join fetch mi.inventoryItem where mi.menuItem.id = ?1",
+            menuItemId
+        ).list();
     }
 
     public void deleteByMenuItem(UUID menuItemId) {

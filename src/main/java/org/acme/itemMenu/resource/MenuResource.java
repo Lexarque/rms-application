@@ -41,7 +41,12 @@ public class MenuResource {
     @Path("/{id}")
     @PermitAll
     public MenuItemResponse getItem(@PathParam("id") UUID id) {
-        return MenuItemResponse.from(menuItemService.getItem(id));
+        try {
+            return MenuItemResponse.from(menuItemService.getItem(id));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @POST
@@ -95,11 +100,12 @@ public class MenuResource {
     }
 
     @DELETE
-    @Path("/{id}/ingredients/{ingredientId}")
+    @Path("/{menuId}/ingredients/{inventoryId}")
     @RolesAllowed({"admin", "manager"})
-    public Response deleteIngredient(@PathParam("id") UUID id,
-                                     @PathParam("ingredientId") UUID ingredientId) {
-        menuItemService.deleteIngredient(id, ingredientId);
+    public Response deleteIngredient(@PathParam("menuId") UUID menuId,
+                                    @PathParam("inventoryId") UUID inventoryId) {
+        menuItemService.deleteIngredient(menuId, inventoryId);
         return Response.noContent().build();
     }
+    
 }
