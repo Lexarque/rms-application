@@ -55,4 +55,10 @@ public class UserService {
         userRepository.persist(existingUser);
     }
 
+    @Transactional
+    public void deleteUser(UUID id) {
+        User existingUser = userRepository.findById(id);
+        if (existingUser == null) throw new NotFoundException("Staff not found");
+        userRepository.delete(existingUser);
+    }
 }
