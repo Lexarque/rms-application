@@ -86,4 +86,13 @@ public class UserResource {
         userService.updateUser(id, req);
         return Response.noContent().build();
     }
+
+    @DELETE
+    @RolesAllowed("admin")
+    @Transactional
+    @Path("/staff/{id}")
+    public Response deleteStaff(@PathParam("id") UUID id) {
+        userService.deleteUser(id);
+        return Response.noContent().build();
+    }
 }

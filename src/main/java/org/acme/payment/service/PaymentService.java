@@ -77,7 +77,7 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.PAID);
         paymentRepository.persist(payment);
 
-        order.setStatus(OrderStatus.COMPLETED);
+        order.setStatus(OrderStatus.PREPARING);
 
         return payment;
     }
