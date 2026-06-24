@@ -2,7 +2,9 @@ package org.acme.inventories.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.acme.inventories.model.InventoryUnit;
 
 public record CreateInventoryItemRequest(
         @NotBlank(message = "itemName is required")
@@ -13,6 +15,9 @@ public record CreateInventoryItemRequest(
         Integer quantity,
 
         @Min(value = 0, message = "minimumThreshold cannot be negative")
-        Integer minimumThreshold
+        Integer minimumThreshold,
+
+        @NotNull(message = "unit is required")
+        InventoryUnit unit
 ) {
 }

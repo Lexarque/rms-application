@@ -3,6 +3,8 @@ package org.acme.inventories.model;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import org.acme.shared.model.BaseEntity;
 
@@ -19,4 +21,8 @@ public class InventoryItem extends BaseEntity {
 
     @Column(name = "minimum_threshold", nullable = false)
     public int minimumThreshold;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    public InventoryUnit unit;
 }
