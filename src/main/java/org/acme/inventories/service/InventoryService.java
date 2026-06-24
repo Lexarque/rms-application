@@ -77,6 +77,7 @@ public class InventoryService {
         item.itemName = request.itemName().trim();
         item.quantity = nonNegativeOrZero(request.quantity(), "quantity");
         item.minimumThreshold = nonNegativeOrZero(request.minimumThreshold(), "minimumThreshold");
+        item.unit = request.unit();
 
         itemRepository.persist(item);
         return item;
@@ -89,6 +90,7 @@ public class InventoryService {
         item.itemName = request.itemName().trim();
         item.quantity = nonNegativeOrZero(request.quantity(), "quantity");
         item.minimumThreshold = nonNegativeOrZero(request.minimumThreshold(), "minimumThreshold");
+        item.unit = request.unit();
         item.updatedAt = LocalDateTime.now();
 
         return item;

@@ -1,0 +1,3 @@
+ALTER TABLE inventory
+    ADD COLUMN unit VARCHAR(20) NOT NULL DEFAULT 'UNIT'
+        CHECK (unit IN ('KG', 'GRAM', 'LITRE', 'MILLILITRE', 'BOX', 'CARTON', 'PACK', 'PIECE', 'BOTTLE', 'CAN', 'BAG', 'UNIT'));

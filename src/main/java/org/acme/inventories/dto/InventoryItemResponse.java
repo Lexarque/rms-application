@@ -1,6 +1,7 @@
 package org.acme.inventories.dto;
 
 import org.acme.inventories.model.InventoryItem;
+import org.acme.inventories.model.InventoryUnit;
 import org.acme.inventories.model.StockStatus;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ public record InventoryItemResponse(
         String itemName,
         int quantity,
         int minimumThreshold,
+        InventoryUnit unit,
         StockStatus status,
         LocalDateTime createdAt,
         LocalDateTime lastUpdated
@@ -21,6 +23,7 @@ public record InventoryItemResponse(
                 item.itemName,
                 item.quantity,
                 item.minimumThreshold,
+                item.unit,
                 computeStatus(item.quantity, item.minimumThreshold),
                 item.createdAt,
                 item.updatedAt
