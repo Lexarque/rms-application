@@ -8,6 +8,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -15,6 +16,8 @@ import java.util.Map;
 
 @Provider
 public class GlobalExceptionMapper implements ExceptionMapper<Throwable> {
+
+    private static final Logger LOG = Logger.getLogger(GlobalExceptionMapper.class);
 
     @Context
     UriInfo uriInfo;
@@ -35,6 +38,7 @@ public class GlobalExceptionMapper implements ExceptionMapper<Throwable> {
             return build(statusInfo, exception.getMessage(), null);
         }
 
+        LOG.error("Unhandled exception", exception);
         return build(Response.Status.INTERNAL_SERVER_ERROR, "Unexpected error", null);
     }
 
