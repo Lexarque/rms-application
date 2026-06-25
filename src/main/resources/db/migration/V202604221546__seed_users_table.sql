@@ -1,6 +1,6 @@
 -- All seeded accounts share the password: password
 INSERT INTO users
-    (id,username,password_hash,full_name,"role",phone_number,created_at,updated_at)
+(id,username,password_hash,full_name,"role",phone_number,created_at,updated_at)
 VALUES
     ('10000000-0000-0000-0000-000000000001'::uuid,'admin1','$2a$10$79VwRQNh2k7miq77.pOpTe5A.L1PUD/U2//43ronfToI8Pf98cwk2','Ahmad Faiz Hassan','admin','+60123456701','2026-01-05 08:00:00','2026-01-05 08:00:00'),
     ('10000000-0000-0000-0000-000000000002'::uuid,'manager1','$2a$10$79VwRQNh2k7miq77.pOpTe5A.L1PUD/U2//43ronfToI8Pf98cwk2','Siti Nurhaliza Rahman','manager','+60123456702','2026-01-05 08:05:00','2026-01-05 08:05:00'),
