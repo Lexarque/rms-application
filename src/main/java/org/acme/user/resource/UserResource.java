@@ -30,7 +30,7 @@ public class UserResource {
     UserRepository userRepository;
 
     @GET
-    @RolesAllowed({"admin", "staff"})
+    @RolesAllowed({"admin", "manager"})
     @Path("/staff")
     public Response getStaffs(
             @QueryParam("name") String name,
@@ -57,7 +57,7 @@ public class UserResource {
     }
 
     @GET
-    @RolesAllowed({"admin", "staff"})
+    @RolesAllowed({"admin", "manager"})
     @Path("/staff/{id}")
     public Response getStaff(
         @PathParam("id") UUID id
@@ -70,7 +70,7 @@ public class UserResource {
     }
 
     @POST
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "manager"})
     @Transactional
     @Path("/create")
     public Response createUser(@Valid CreateUserRequest req) {
@@ -79,7 +79,7 @@ public class UserResource {
     }
 
     @PUT
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "manager"})
     @Transactional
     @Path("/staff/{id}")
     public Response updateStaff(@PathParam("id") UUID id, @Valid UpdateUserRequest req) {
@@ -88,7 +88,7 @@ public class UserResource {
     }
 
     @DELETE
-    @RolesAllowed("admin")
+    @RolesAllowed({"admin", "manager"})
     @Transactional
     @Path("/staff/{id}")
     public Response deleteStaff(@PathParam("id") UUID id) {
